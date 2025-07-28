@@ -1,0 +1,3 @@
+[submodule "src/rlib"]
+	path = src/rlib
+	url = git@github.com:chauhan112/Rlib.git

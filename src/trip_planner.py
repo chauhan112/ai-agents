@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage
 from langchain_ollama import ChatOllama
 
 MODEL = "gemma3:4b"
+# MODEL = "deepseek-r1:1.5b"
 
 class AgentState(TypedDict):
     destination: str 

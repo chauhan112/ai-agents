@@ -1,3 +1,4 @@
+#%%
 from peewee import (
     SqliteDatabase,
     Model,
@@ -27,9 +28,9 @@ class BaseModel(Model):
 class LLMAgentData(BaseModel):
     task_id = CharField(index=True)
     function_name = CharField()
-    type = CharField(choices=[("input", "input"), ("process", "process"), ("output", "output")])
     variable_name = CharField(null=True)
     data = JSONField(null=True) # Use our custom JSON field
+    more_info = JSONField(null=True)
     created_on = DateTimeField(default=datetime.now)
     modified_on = DateTimeField(default=datetime.now)
 

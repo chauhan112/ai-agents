@@ -48,7 +48,8 @@ class DbWrapper:
         return self._run_command(LLMAgentData.get_or_none, task_id=task_id, 
             function_name=func_name, 
             variable_name=var_name)
-
+    def delete(self, task_id):
+        return self._run_command(lambda : LLMAgentData.delete().where(LLMAgentData.task_id == task_id).execute())
 class ReadLog:
     inst = None
     @staticmethod
@@ -60,6 +61,11 @@ class ReadLog:
     def readOrCreate(task_id, func, func_name= "-no-name-", var_name= "-no-name-", more_info={}):
         inst = ReadLog.get_instance()
         return inst.read_or_create(task_id, func, func_name, var_name, more_info)
+    @staticmethod
+    def delete(task_id):
+        inst = ReadLog.get_instance()
+        return inst.delete(task_id)
+
 
 def runModel(model, prompt, state, func_name= "-no-name-"):
     newPrompt = ReadLog.readOrCreate(state["task_id"], lambda: prompt, func_name, "prompt")
@@ -102,7 +108,7 @@ def motivation_writer(state: AgentState) -> AgentState:
     Here is also candidate profile content
     {state['candidate_profile_info']}
 
-    Write a motivation letter for the candidate
+    Write a motivation letter for the candidate (in the perspective of the candidate)
     """
     response_content = runModel(MODEL, prompt, state, inspect.currentframe().f_code.co_name)
     return {"motivation": response_content}
@@ -115,7 +121,7 @@ def cv_writer(state: AgentState) -> AgentState:
     Here is also candidate profile content 
     {state['candidate_profile_info']}
 
-    make a CV for the candidate
+    make a CV for the candidate. Just make it a list of bullet points instead of markdown
     """
     response_content = runModel(MODEL, prompt, state, inspect.currentframe().f_code.co_name)
     return {"cvContent": response_content}
@@ -161,8 +167,25 @@ def generate_key(params) -> str:
     hash_object = hashlib.sha256(serialized_params.encode('utf-8'))
     return hash_object.hexdigest()
 
-def job_apply_helper(candidate_profile, job_description):
+def removeThinkTag(content):
+    import re
+    return re.sub("<think>.*</think>","", content, flags=re.DOTALL)
+
+def job_apply_helper(candidate_profile, job_description, outCV ="cv.txt", outMotivation ="motivation.txt", redo=False):
     key = generate_key((candidate_profile.strip(), job_description.strip()))
     graph = get_pipeline_graph()
+    if redo:
+        newkey = generate_key((key, MODEL, TEMPERATURE))
+        ReadLog.delete(newkey)
+        ReadLog.delete(key)
     result = graph.invoke({"task_id": key,"job_description": job_description, "candidate_profile_info": candidate_profile, "revise_cv": ""})
+    
+    result["motivation"] = removeThinkTag(result["motivation"])
+    result["cvContent"] = removeThinkTag(result["cvContent"])
+
+    with open(outCV, "w") as f:
+        f.write(result["cvContent"])
+    with open(outMotivation, "w") as f:
+        f.write(result["motivation"])
+    
     return result

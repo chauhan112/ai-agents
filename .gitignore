@@ -1,7 +1,7 @@
 data
 tests/job_apply_helper/candidate_profile.txt
 tests/job_apply_helper/results.ipynb
-
+output
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
